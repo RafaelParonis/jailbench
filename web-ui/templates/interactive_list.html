@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Chats - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-comments text-primary"></i>
+            Interactive Chats
+        </h1>
+        <p class="text-muted">Browse recorded interactive chat sessions with summaries and quick stats</p>
+    </div>
+    <div class="col-12">
+        <div class="alert alert-info">
+            <small>Showing {{ sessions|length }} sessions found in <code>interactivechats/</code></small>
+        </div>
+    </div>
+    
+    {% if sessions %}
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Session</th>
+                        <th>Model</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                        <th class="text-center">Msgs</th>
+                        <th class="text-center">User</th>
+                        <th class="text-center">Assistant</th>
+                        <th class="text-center">System</th>
+                        <th>File</th>
+                        <th class="text-center">Avg Resp</th>
+                        <th class="text-center">Tokens</th>
+                        <th class="text-center">Flags</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">{{ s.session_id }}</span>
+                                {% if s.active %}
+                                    <span class="badge bg-success">active</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ s.provider }}/{{ s.model_name }}</span>
+                        </td>
+                        <td><small class="text-muted">{{ s.created_at }}</small></td>
+                        <td><small class="text-muted">{{ s.updated_at }}</small></td>
+                        <td class="text-center"><span class="badge bg-dark">{{ s.message_count }}</span></td>
+                        <td class="text-center"><span class="badge bg-primary">{{ s.user_messages }}</span></td>
+                        <td class="text-center"><span class="badge bg-secondary">{{ s.assistant_messages }}</span></td>
+                        <td class="text-center"><span class="badge bg-warning text-dark">{{ s.system_messages }}</span></td>
+                        <td><small>{{ s.filename }}</small></td>
+                        <td class="text-center">
+                            {% if s.avg_response_time is not none %}
+                            <span class="badge bg-secondary">{{ '%.2f'|format(s.avg_response_time) }}s</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center"><span class="badge bg-dark">{{ s.tokens_total }}</span></td>
+                        <td class="text-center">
+                            {% if s.flag_matches_total and s.flag_matches_total > 0 %}
+                            <span class="badge bg-danger">{{ s.flag_matches_total }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/interactive/{{ s.session_id }}" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-warning">No interactive chat sessions found.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

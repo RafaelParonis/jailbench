@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}No Data - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="text-center mb-5">
+            <i class="fas fa-database text-muted" style="font-size: 4rem;"></i>
+            <h1 class="display-4 text-muted mt-3">No Data Available</h1>
+            <p class="lead">No benchmark results found. Run some tests to see visualizations!</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket"></i> Get Started</h5>
+                <p class="card-text">Run your first benchmark to generate data for visualization:</p>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <code>python bench.py --summary</code>
+                </div>
+                
+                <p class="text-muted">Or try the adversarial mode:</p>
+                
+                <div class="bg-light p-3 rounded">
+                    <code>python bench.py --adversarial --objective "explain photosynthesis" --max-iterations 3</code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-refresh"></i> Refresh Page
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

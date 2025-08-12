@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Analytics - JailBench{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    {% if data and data.advanced_analytics %}
+        <div class="row">
+            <div class="col-12">
+                <h1>Advanced Analytics Dashboard</h1>
+                <p class="text-muted">Deep insights into AI jailbreaking patterns and model vulnerabilities</p>
+            </div>
+        </div>
+
+        {% if data.advanced_analytics.VulnerabilityMatrixModule %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Cross-Model Vulnerability Matrix</h3>
+                        <p class="card-text">Comparative analysis of model vulnerabilities across attack categories</p>
+                    </div>
+                    <div class="card-body">
+                        {% set vuln_data = data.advanced_analytics.VulnerabilityMatrixModule.results %}
+                        
+                        {% if vuln_data.single_model_analysis %}
+                        <div class="alert alert-info">
+                            <h4>Single Model Analysis: {{ vuln_data.single_model_analysis.model }}</h4>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Security Grade:</strong> 
+                                    <span class="badge {{ 'bg-success' if vuln_data.single_model_analysis.security_grade in ['A+', 'A'] else 'bg-warning' if vuln_data.single_model_analysis.security_grade in ['B+', 'B'] else 'bg-danger' }}">
+                                        {{ vuln_data.single_model_analysis.security_grade }}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Overall Vulnerability:</strong> {{ (vuln_data.single_model_analysis.overall_vulnerability_rate * 100) | round | int }}%
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Total Tests:</strong> {{ vuln_data.single_model_analysis.total_tests }}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ vuln_data.note }}</small>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5>Attack Category Breakdown</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Attack Category</th>
+                                                <th>Success Rate</th>
+                                                <th>Risk Level</th>
+                                                <th>Tests</th>
+                                                <th>Successes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for category, stats in vuln_data.single_model_analysis.categories.items() %}
+                                            <tr>
+                                                <td><strong>{{ category.replace('_', ' ').title() }}</strong></td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px; width: 100px;">
+                                                        {% set vuln_pct = (stats.vulnerability_rate * 100) | round | int %}
+                                                        <div class="progress-bar {{ 'bg-success' if vuln_pct <= 20 else 'bg-warning' if vuln_pct <= 40 else 'bg-danger' }}" 
+                                                             style="width: {{ vuln_pct }}%">
+                                                            {{ vuln_pct }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge {{ 'bg-danger' if stats.risk_level == 'critical' else 'bg-warning' if stats.risk_level in ['high', 'medium'] else 'bg-success' }}">
+                                                        {{ stats.risk_level.title() }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ stats.total_tests }}</td>
+                                                <td>{{ stats.successful_jailbreaks }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if vuln_data.model_rankings %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h4>Model Security Rankings</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Model</th>
+                                                <th>Vulnerability Rate</th>
+                                                <th>Security Grade</th>
+                                                <th>Tests</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for ranking in vuln_data.model_rankings %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td><span class="badge bg-secondary">{{ ranking.model }}</span></td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px; width: 80px;">
+                                                        {% set vuln_pct = (ranking.overall_vulnerability_rate * 100) | round | int %}
+                                                        <div class="progress-bar {{ 'bg-success' if vuln_pct <= 20 else 'bg-warning' if vuln_pct <= 40 else 'bg-danger' }}" 
+                                                             style="width: {{ vuln_pct }}%">
+                                                            {{ vuln_pct }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge {{ 'bg-success' if ranking.security_grade in ['A+', 'A'] else 'bg-warning' if ranking.security_grade in ['B+', 'B'] else 'bg-danger' }}">
+                                                        {{ ranking.security_grade }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ ranking.total_tests }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            {% if vuln_data.provider_analysis %}
+                            <div class="col-md-6">
+                                <h4>Provider Comparison</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Provider</th>
+                                                <th>Avg Vulnerability</th>
+                                                <th>Models</th>
+                                                <th>Assessments</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for provider, stats in vuln_data.provider_analysis.items() %}
+                                            <tr>
+                                                <td><strong>{{ provider }}</strong></td>
+                                                <td>
+                                                    {% set prov_pct = (stats.avg_vulnerability_rate * 100) | round | int %}
+                                                    <span class="badge {{ 'bg-success' if prov_pct <= 20 else 'bg-warning' if prov_pct <= 40 else 'bg-danger' }}">
+                                                        {{ prov_pct }}%
+                                                    </span>
+                                                </td>
+                                                <td>{{ stats.models_tested }}</td>
+                                                <td>{{ stats.total_assessments }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if vuln_data.vulnerability_matrix %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h4>Vulnerability Heatmap</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Model</th>
+                                                {% for category in vuln_data.test_categories %}
+                                                <th>{{ category.replace('_', ' ').title() }}</th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for model in vuln_data.models_tested %}
+                                            <tr>
+                                                <td><strong>{{ model }}</strong></td>
+                                                {% for category in vuln_data.test_categories %}
+                                                    {% set cell_data = vuln_data.vulnerability_matrix[model][category] %}
+                                                    <td class="text-center" style="
+                                                        {% if cell_data.risk_level == 'critical' %}background-color: #dc3545; color: white;
+                                                        {% elif cell_data.risk_level == 'high' %}background-color: #fd7e14; color: white;
+                                                        {% elif cell_data.risk_level == 'medium' %}background-color: #ffc107; color: black;
+                                                        {% elif cell_data.risk_level == 'low' %}background-color: #20c997; color: white;
+                                                        {% elif cell_data.risk_level == 'minimal' %}background-color: #198754; color: white;
+                                                        {% else %}background-color: #6c757d; color: white;{% endif %}
+                                                    ">
+                                                        {{ (cell_data.vulnerability_rate * 100) | round | int }}%<br>
+                                                        <small>({{ cell_data.successful_jailbreaks }}/{{ cell_data.total_tests }})</small>
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if data.advanced_analytics.AttackHeatmapModule %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Attack Vector Effectiveness Analysis</h3>
+                        <p class="card-text">Analysis of which attack types are most effective across models</p>
+                    </div>
+                    <div class="card-body">
+                        {% set attack_data = data.advanced_analytics.AttackHeatmapModule.results %}
+                        
+                        {% if attack_data.attack_rankings %}
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <h4>Attack Effectiveness Rankings</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Attack Type</th>
+                                                <th>Success Rate</th>
+                                                <th>Effectiveness</th>
+                                                <th>Attempts</th>
+                                                <th>Avg Response Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for attack in attack_data.attack_rankings %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td><strong>{{ attack.attack_type.replace('_', ' ').title() }}</strong></td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px; width: 100px;">
+                                                        {% set success_pct = (attack.overall_success_rate * 100) | round | int %}
+                                                        <div class="progress-bar {{ 'bg-danger' if success_pct >= 60 else 'bg-warning' if success_pct >= 30 else 'bg-success' }}" 
+                                                             style="width: {{ success_pct }}%">
+                                                            {{ success_pct }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {% set eff_level = attack_data.heatmap_data | selectattr("attack_type", "equalto", attack.attack_type) | first %}
+                                                    {% if eff_level %}
+                                                    <span class="badge {{ 'bg-danger' if eff_level.effectiveness_level in ['very_high', 'high'] else 'bg-warning' if eff_level.effectiveness_level == 'medium' else 'bg-success' }}">
+                                                        {{ eff_level.effectiveness_level.replace('_', ' ').title() }}
+                                                    </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ attack.total_attempts }}</td>
+                                                <td>
+                                                    {% if attack.avg_response_time %}
+                                                    {{ "%.2f" | format(attack.avg_response_time) }}s
+                                                    {% else %}
+                                                    -
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            {% if attack_data.defense_recommendations %}
+                            <div class="col-md-4">
+                                <h4>Defense Recommendations</h4>
+                                {% for rec in attack_data.defense_recommendations %}
+                                <div class="alert {{ 'alert-danger' if rec.priority == 'high' else 'alert-warning' if rec.priority == 'medium' else 'alert-info' }}">
+                                    <strong>{{ rec.attack_type.replace('_', ' ').title() }}</strong>
+                                    <span class="badge bg-dark float-end">{{ rec.priority.upper() }}</span>
+                                    <br><small>{{ rec.recommendation }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if attack_data.summary %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h5>Attack Analysis Summary</h5>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <strong>Total Attack Types:</strong> {{ attack_data.summary.total_attack_types }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Most Effective:</strong> {{ attack_data.summary.most_effective_attack.replace('_', ' ').title() if attack_data.summary.most_effective_attack }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Least Effective:</strong> {{ attack_data.summary.least_effective_attack.replace('_', ' ').title() if attack_data.summary.least_effective_attack }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>High Risk Attacks:</strong> {{ attack_data.summary.high_risk_attacks | length }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="alert alert-warning" role="alert">
+                    <h4>No Advanced Analytics Data Available</h4>
+                    <p>Run a benchmark with advanced analytics enabled to see detailed analysis here.</p>
+                    <code>python bench.py --summary</code>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

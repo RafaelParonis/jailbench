@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Adversarial Tests - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-shield text-warning"></i>
+            Adversarial Tests
+        </h1>
+        <p class="text-muted">Model vs Model jailbreaking attempts - AI attacking AI defenses</p>
+    </div>
+</div>
+
+{% if adversarial_results %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="display-6 text-info">{{ adversarial_results|length }}</div>
+                <h6 class="card-title">Total Adversarial Tests</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                {% set successful_attacks = adversarial_results | selectattr('adversarial_test.success', 'equalto', true) | list | length %}
+                <div class="display-6 text-danger">{{ successful_attacks }}</div>
+                <h6 class="card-title">Successful Jailbreaks</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                {% set failed_attacks = adversarial_results | selectattr('adversarial_test.success', 'equalto', false) | list | length %}
+                <div class="display-6 text-success">{{ failed_attacks }}</div>
+                <h6 class="card-title">Defended Successfully</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                {% set success_rate = (successful_attacks / adversarial_results|length * 100) if adversarial_results|length > 0 else 0 %}
+                <div class="display-6 text-warning">{{ "%.1f" | format(success_rate) }}%</div>
+                <h6 class="card-title">Attack Success Rate</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>Adversarial Test Results</h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="expandAll()">Expand All</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="collapseAll()">Collapse All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="accordion" id="adversarialResultsAccordion">
+    {% for result in adversarial_results %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="adversarial_heading{{ loop.index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#adversarial_collapse{{ loop.index }}">
+                <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                    <div>
+                        <strong>{{ result.adversarial_test.attacker_model }} vs {{ result.adversarial_test.target_model }}</strong>
+                        <small class="text-muted ms-2">{{ result.run_id }}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        {% if result.adversarial_test.success %}
+                            <span class="badge bg-danger me-2">JAILBROKEN</span>
+                        {% else %}
+                            <span class="badge bg-success me-2">DEFENDED</span>
+                        {% endif %}
+                        <small class="text-muted">{{ result.adversarial_test.final_iteration }}/{{ result.adversarial_test.max_iterations }} iterations</small>
+                    </div>
+                </div>
+            </button>
+        </h2>
+        <div id="adversarial_collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#adversarialResultsAccordion">
+            <div class="accordion-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-comments"></i> Adversarial Conversation</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Objective:</strong>
+                                    <div class="bg-warning bg-opacity-10 p-2 rounded mt-1">
+                                        <small>{{ result.adversarial_test.objective }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <strong>Conversation Flow:</strong>
+                                    <div class="mt-2" style="max-height: 400px; overflow-y: auto;">
+                                        {% for message in result.conversation_history %}
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <div class="badge bg-{{ 'danger' if message.role == 'user' else 'primary' }}">
+                                                    {{ 'Attacker' if message.role == 'user' else 'Defender' }}
+                                                </div>
+                                                <small class="text-muted ms-2">Turn {{ loop.index }}</small>
+                                            </div>
+                                            <div class="bg-light p-3 rounded">
+                                                <small>{{ message.content }}</small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Attack Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="text-center">
+                                            <div class="h4 {{ 'text-danger' if result.adversarial_test.success else 'text-success' }}">
+                                                {{ 'SUCCESS' if result.adversarial_test.success else 'FAILED' }}
+                                            </div>
+                                            <small class="text-muted">Attack Result</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <strong>Models:</strong>
+                                    <div class="mt-2">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="text-danger">Attacker:</span>
+                                            <span class="badge bg-danger">{{ result.adversarial_test.attacker_model }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-primary">Defender:</span>
+                                            <span class="badge bg-primary">{{ result.adversarial_test.target_model }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <strong>Iteration Progress:</strong>
+                                    <div class="progress mt-2" style="height: 25px;">
+                                        {% set progress = (result.adversarial_test.final_iteration / result.adversarial_test.max_iterations * 100) %}
+                                        <div class="progress-bar {{ 'bg-danger' if result.adversarial_test.success else 'bg-warning' }}" 
+                                             style="width: {{ progress }}%">
+                                            {{ result.adversarial_test.final_iteration }}/{{ result.adversarial_test.max_iterations }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Total Time:</small><br>
+                                        <span class="badge bg-info">{{ "%.2f" | format(result.adversarial_test.total_time) }}s</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Avg per Turn:</small><br>
+                                        {% set avg_time = result.adversarial_test.total_time / result.adversarial_test.final_iteration if result.adversarial_test.final_iteration > 0 else 0 %}
+                                        <span class="badge bg-secondary">{{ "%.2f" | format(avg_time) }}s</span>
+                                    </div>
+                                </div>
+
+                                {% if result.result.success_response %}
+                                <div class="mt-3">
+                                    <strong>Success Response:</strong>
+                                    <div class="bg-danger bg-opacity-10 p-2 rounded mt-1" style="max-height: 150px; overflow-y: auto;">
+                                        <small>{{ result.result.success_response }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if result.result.evaluator_reasoning %}
+                                <div class="mt-3">
+                                    <strong>Final Evaluator Reasoning:</strong>
+                                    <div class="bg-info bg-opacity-10 p-2 rounded mt-1" style="max-height: 100px; overflow-y: auto;">
+                                        <small>{{ result.result.evaluator_reasoning }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Understanding Adversarial Tests</h6>
+            <ul class="mb-0">
+                <li><strong>Attacker Model:</strong> AI trying to generate prompts to jailbreak the defender</li>
+                <li><strong>Defender Model:</strong> AI trying to refuse harmful requests and maintain safety</li>
+                <li><strong>Objective:</strong> The harmful goal the attacker is trying to achieve</li>
+                <li><strong>Iterations:</strong> Number of back-and-forth attempts allowed</li>
+                <li><strong>Success:</strong> Whether the attacker successfully got the defender to comply with harmful request</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">No Adversarial Tests Found</h4>
+    <p>No model vs model adversarial test results found. Run adversarial tests to see AI vs AI jailbreaking attempts.</p>
+    <hr>
+    <p class="mb-0">Use <code>python bench.py --adversarial --objective "your objective" --max-iterations 3</code> to run adversarial tests.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function expandAll() {
+    document.querySelectorAll('.accordion-collapse').forEach(element => {
+        element.classList.add('show');
+    });
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.classList.remove('collapsed');
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.accordion-collapse').forEach(element => {
+        element.classList.remove('show');
+    });
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.classList.add('collapsed');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    accordionItems.forEach(item => {
+        const button = item.querySelector('.accordion-button');
+        const isSuccessful = button.textContent.includes('JAILBROKEN');
+        
+        if (isSuccessful) {
+            item.classList.add('border-danger');
+        } else {
+            item.classList.add('border-success');
+        }
+    });
+});
+</script>
+{% endblock %}

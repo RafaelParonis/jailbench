@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Test Results - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-list-ul text-info"></i>
+            Test Results
+        </h1>
+        <p class="text-muted">Detailed view of individual test executions and responses</p>
+    </div>
+</div>
+
+{% if data and data.individual_results %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5>Found {{ data.individual_results|length }} test results</h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="expandAll()">Expand All</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="collapseAll()">Collapse All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="accordion" id="testResultsAccordion">
+    {% for result in data.individual_results %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading{{ loop.index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                    <div>
+                        <strong>{{ result.test_info.name }}</strong>
+                        <small class="text-muted ms-2">{{ result.model_info.model_name }}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        {% if result.result.is_jailbroken %}
+                            <span class="badge bg-danger me-2">JAILBROKEN</span>
+                        {% else %}
+                            <span class="badge bg-success me-2">SECURE</span>
+                        {% endif %}
+                        <small class="text-muted">{{ "%.2f" | format(result.execution.response_time) }}s</small>
+                    </div>
+                </div>
+            </button>
+        </h2>
+        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#testResultsAccordion">
+            <div class="accordion-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-comments"></i> Test Conversation</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if result.test_info.system_prompt %}
+                                <div class="mb-3">
+                                    <strong>System Prompt:</strong>
+                                    <div class="bg-light p-2 rounded mt-1">
+                                        <small>{{ result.test_info.system_prompt }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <strong>Conversation:</strong>
+                                    {% if result.execution.messages_sent %}
+                                        {% for message in result.execution.messages_sent %}
+                                        <div class="mt-2">
+                                            <div class="badge bg-{{ 'primary' if message.role == 'user' else 'secondary' if message.role == 'assistant' else 'info' }}">
+                                                {{ message.role|title }}
+                                            </div>
+                                            <div class="bg-light p-2 rounded mt-1">
+                                                <small>{{ message.content }}</small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="bg-light p-2 rounded mt-1">
+                                            <small>{{ result.test_info.user_prompt }}</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <strong>AI Response:</strong>
+                                    <div class="bg-light p-2 rounded mt-1" style="max-height: 300px; overflow-y: auto;">
+                                        <small>{{ result.result.response }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-search"></i> Evaluation Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 {{ 'text-danger' if result.result.is_jailbroken else 'text-success' }}">
+                                                {{ 'JAILBROKEN' if result.result.is_jailbroken else 'SECURE' }}
+                                            </div>
+                                            <small class="text-muted">Final Decision</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 text-info">{{ "%.0f" | format(result.result.confidence_score * 100) }}%</div>
+                                            <small class="text-muted">Confidence</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if result.analysis.evaluation_method %}
+                                <div class="mb-3">
+                                    <strong>Evaluation Method:</strong>
+                                    <span class="badge bg-info">{{ result.analysis.evaluation_method }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if result.analysis.suspicious_flags_found and result.analysis.suspicious_flags_found|length > 0 %}
+                                <div class="mb-3">
+                                    <strong>Suspicious Flag Words:</strong>
+                                    <div class="mt-1">
+                                        {% for fw in result.analysis.suspicious_flags_found %}
+                                        <span class="badge bg-danger me-1">{{ fw }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if result.result.evaluator_reasoning %}
+                                <div class="mb-3">
+                                    <strong>Evaluator Reasoning:</strong>
+                                    <div class="bg-warning bg-opacity-10 p-2 rounded mt-1" style="max-height: 200px; overflow-y: auto;">
+                                        <small>{{ result.result.evaluator_reasoning }}</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if result.analysis.safety_refusals_found %}
+                                <div class="mb-3">
+                                    <strong>Safety Refusals Found:</strong>
+                                    <div class="mt-1">
+                                        {% for refusal in result.analysis.safety_refusals_found %}
+                                        <span class="badge bg-success me-1">{{ refusal }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if result.analysis.jailbreak_indicators_found %}
+                                <div class="mb-3">
+                                    <strong>Jailbreak Indicators:</strong>
+                                    <div class="mt-1">
+                                        {% for indicator in result.analysis.jailbreak_indicators_found %}
+                                        <span class="badge bg-danger me-1">{{ indicator }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <small class="text-muted">Category:</small><br>
+                                        <span class="badge bg-secondary">{{ result.test_info.category }}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Response Time:</small><br>
+                                        <span class="badge bg-info">{{ "%.2f" | format(result.execution.response_time) }}s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">No Test Results Available</h4>
+    <p>No individual test results found. Run a benchmark test to see detailed results.</p>
+    <hr>
+    <p class="mb-0">Use <code>python bench.py --summary</code> to generate test results.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function expandAll() {
+    document.querySelectorAll('.accordion-collapse').forEach(element => {
+        element.classList.add('show');
+    });
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.classList.remove('collapsed');
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.accordion-collapse').forEach(element => {
+        element.classList.remove('show');
+    });
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.classList.add('collapsed');
+    });
+}
+</script>
+{% endblock %}

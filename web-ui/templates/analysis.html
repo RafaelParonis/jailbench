@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-chart-line text-primary"></i>
+            Advanced Analysis
+        </h1>
+        <p class="text-muted">Deep dive into evaluation patterns, safety mechanisms, and attack techniques</p>
+    </div>
+</div>
+
+{% if data and data.analytics %}
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Safety Mechanism Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if data.analytics.safety_mechanism_analysis %}
+                <div class="mb-4">
+                    <h6>Common Refusal Patterns:</h6>
+                    {% for pattern, count in data.analytics.safety_mechanism_analysis.most_common_refusals %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-success">"{{ pattern }}"</span>
+                        <span class="badge bg-success">{{ count }} uses</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Common Compliance Patterns:</h6>
+                    {% for pattern, count in data.analytics.safety_mechanism_analysis.most_common_compliance %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-danger">"{{ pattern }}"</span>
+                        <span class="badge bg-danger">{{ count }} uses</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <h6>Response Length Distribution:</h6>
+                    {% for category, count in data.analytics.safety_mechanism_analysis.response_length_analysis.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ category|replace('_', ' ')|title }}</span>
+                        <span class="badge bg-info">{{ count }} responses</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No safety mechanism data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-bug"></i> Jailbreak Techniques Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if data.analytics.jailbreak_techniques_analysis %}
+                {% for technique, analysis in data.analytics.jailbreak_techniques_analysis.items() %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>{{ technique|replace('_', ' ')|title }}:</strong>
+                        <span class="badge {{ 'bg-danger' if analysis.success_rate > 0.7 else 'bg-warning' if analysis.success_rate > 0.4 else 'bg-success' }}">
+                            {{ "%.1f" | format(analysis.success_rate * 100) }}% success
+                        </span>
+                    </div>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar {{ 'bg-danger' if analysis.success_rate > 0.7 else 'bg-warning' if analysis.success_rate > 0.4 else 'bg-success' }}" 
+                             style="width: {{ analysis.success_rate * 100 }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ analysis.successful_jailbreaks }}/{{ analysis.total_attempts }} attempts ({{ "%.2f" | format(analysis.avg_response_time) }}s avg)</small>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No jailbreak technique data available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-brain"></i> Evaluator Performance Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if data.analytics.confidence_score_analysis %}
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-info">{{ "%.1f" | format(data.analytics.confidence_score_analysis.average_confidence * 100) }}%</div>
+                            <small class="text-muted">Average Confidence</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ data.analytics.confidence_score_analysis.high_confidence_above_0_8 }}</div>
+                            <small class="text-muted">High Confidence (≥80%)</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ "%.1f" | format(data.analytics.confidence_score_analysis.median_confidence * 100) }}%</div>
+                            <small class="text-muted">Median Confidence</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 text-danger">{{ data.analytics.confidence_score_analysis.low_confidence_below_0_3 }}</div>
+                            <small class="text-muted">Low Confidence (<30%)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="confidenceChart"></canvas>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Response Time Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if data.analytics.response_time_analysis %}
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="h5 text-primary">{{ "%.2f" | format(data.analytics.response_time_analysis.average_seconds) }}s</div>
+                        <small class="text-muted">Average</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 text-success">{{ "%.2f" | format(data.analytics.response_time_analysis.min_seconds) }}s</div>
+                        <small class="text-muted">Fastest</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 text-warning">{{ "%.2f" | format(data.analytics.response_time_analysis.max_seconds) }}s</div>
+                        <small class="text-muted">Slowest</small>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Response Time Stats:</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Fast responses (<1s)</span>
+                                <span class="badge bg-success">{{ data.analytics.response_time_analysis.fast_responses_under_1s }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Slow responses (>5s)</span>
+                                <span class="badge bg-warning">{{ data.analytics.response_time_analysis.slow_responses_over_5s }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Median time</span>
+                                <span class="badge bg-info">{{ "%.2f" | format(data.analytics.response_time_analysis.median_seconds) }}s</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>75th percentile</span>
+                                <span class="badge bg-secondary">{{ "%.2f" | format(data.analytics.response_time_analysis.percentile_75) }}s</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Error Analysis</h5>
+            </div>
+            <div class="card-body">
+                {% if data.analytics.error_analysis %}
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="h5 {{ 'text-success' if data.analytics.error_analysis.error_rate == 0 else 'text-danger' }}">
+                            {{ "%.1f" | format(data.analytics.error_analysis.error_rate * 100) }}%
+                        </div>
+                        <small class="text-muted">Error Rate</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-info">{{ data.analytics.error_analysis.total_errors }}</div>
+                        <small class="text-muted">Total Errors</small>
+                    </div>
+                </div>
+
+                {% if data.analytics.error_analysis.error_types %}
+                <div>
+                    <h6>Error Types:</h6>
+                    {% for error_type, count in data.analytics.error_analysis.error_types.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-danger">{{ error_type }}</span>
+                        <span class="badge bg-danger">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center text-success">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <h6>No errors detected</h6>
+                    <small class="text-muted">All tests completed successfully (error_analysis is null)</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-flag"></i> Flag Word Signals</h5>
+            </div>
+            <div class="card-body">
+                {% if data and data.flag_words %}
+                <div class="mb-2">
+                    <small class="text-muted">Configured flag words</small><br>
+                    {% for w in data.flag_words %}
+                    <span class="badge bg-outline-danger text-danger border me-1">{{ w }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if data and data.flag_counts and data.flag_counts|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr><th>Flag Word</th><th class="text-end">Matches</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for w, c in data.flag_counts.items() %}
+                            <tr>
+                                <td><span class="badge bg-danger">{{ w }}</span></td>
+                                <td class="text-end"><span class="badge bg-dark">{{ c }}</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No flag-word matches were detected in the latest run.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">No Analysis Data Available</h4>
+    <p>No analytics data found. Run a benchmark test to generate analysis.</p>
+    <hr>
+    <p class="mb-0">Use <code>python bench.py --summary</code> to generate analytics.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if data and data.analytics and data.analytics.confidence_score_analysis %}
+<script>
+const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+const confidenceData = {
+    labels: [
+        {% for range, count in data.analytics.confidence_score_analysis.distribution.items() %}
+        '{{ range }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for range, count in data.analytics.confidence_score_analysis.distribution.items() %}
+            {{ count }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745', '#6f42c1']
+    }]
+};
+
+new Chart(confidenceCtx, {
+    type: 'doughnut',
+    data: confidenceData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,64 @@
+{
+  "semantic_analysis": {
+    "enabled": true,
+    "min_word_frequency": 2,
+    "cluster_threshold": 0.8,
+    "analyze_successful_only": false,
+    "extract_linguistic_features": true
+  },
+  "defense_profiling": {
+    "enabled": true,
+    "confidence_scoring": true,
+    "consistency_analysis": true,
+    "response_length_analysis": true,
+    "trigger_word_detection": true
+  },
+  "vulnerability_matrix": {
+    "enabled": true,
+    "create_heatmap": true,
+    "model_fingerprinting": true,
+    "shared_pattern_analysis": true
+  },
+  "attack_vectors": {
+    "enabled": true,
+    "length_correlation": true,
+    "emotional_analysis": true,
+    "structure_analysis": true,
+    "escalation_tracking": true
+  },
+  "conversation_flow": {
+    "enabled": true,
+    "persuasion_tracking": true,
+    "context_exploitation": true,
+    "memory_consistency": true,
+    "trajectory_clustering": true
+  },
+  "response_patterns": {
+    "enabled": true,
+    "pre_compliance_detection": true,
+    "information_leakage": true,
+    "hedging_analysis": true,
+    "refusal_classification": true
+  },
+  "tool_calling": {
+    "enabled": false,
+    "malicious_tool_calls": false,
+    "tool_chaining": false,
+    "permission_escalation": false,
+    "data_extraction": false
+  },
+  "prompt_optimization": {
+    "enabled": true,
+    "token_position_analysis": true,
+    "structure_templates": true,
+    "character_limit_analysis": true,
+    "component_analysis": true
+  },
+  "performance": {
+    "enabled": true,
+    "max_execution_time": 30.0,
+    "memory_limit_mb": 512,
+    "parallel_processing": true,
+    "cache_results": true
+  }
+}

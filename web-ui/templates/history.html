@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}History - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-history text-success"></i>
+            Test History
+        </h1>
+        <p class="text-muted">Historical view of test runs and performance trends over time</p>
+    </div>
+</div>
+
+{% if data %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="h5 text-primary" style="word-break: break-all; line-height: 1.2;">{{ data.run_id }}</div>
+                <h6 class="card-title">Latest Run ID</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="display-6 text-info">{{ data.timestamp[:8] }}</div>
+                <h6 class="card-title">Run Date</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="display-6 text-warning">{{ data.timestamp[9:] }}</div>
+                <h6 class="card-title">Run Time</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="display-6 text-success">{{ data.individual_results|length if data.individual_results else 0 }}</div>
+                <h6 class="card-title">Total Tests</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if data.analytics and data.analytics.metadata %}
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Run Metadata</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Generated:</strong></td>
+                        <td>{{ data.analytics.metadata.generated_at }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Runtime:</strong></td>
+                        <td>{{ data.analytics.metadata.total_runtime_seconds }}s</td>
+                    </tr>
+                    {% if data.analytics.metadata.evaluator_model %}
+                    <tr>
+                        <td><strong>Evaluator Model:</strong></td>
+                        <td><span class="badge bg-info">{{ data.analytics.metadata.evaluator_model }}</span></td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Models Tested:</strong></td>
+                        <td>{{ data.analytics.metadata.models_tested|length if data.analytics.metadata.models_tested else 0 }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Test Categories:</strong></td>
+                        <td>{{ data.analytics.metadata.test_categories|length if data.analytics.metadata.test_categories else 0 }}</td>
+                    </tr>
+                    {% if data.analytics.metadata.reasoning_enabled %}
+                    <tr>
+                        <td><strong>Reasoning Mode:</strong></td>
+                        <td><span class="badge bg-success">Enabled</span></td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        
+        {% if data.analytics.metadata.models_tested %}
+        <div class="mt-3">
+            <strong>Tested Models:</strong>
+            <div class="mt-2">
+                {% for model in data.analytics.metadata.models_tested %}
+                <span class="badge bg-secondary me-2 mb-1">{{ model }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if data.analytics.metadata.test_categories %}
+        <div class="mt-3">
+            <strong>Test Categories:</strong>
+            <div class="mt-2">
+                {% for category in data.analytics.metadata.test_categories %}
+                <span class="badge bg-outline-primary me-2 mb-1">{{ category }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if data.individual_results %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-timeline"></i> Test Execution Timeline</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Model</th>
+                        <th>Category</th>
+                        <th>Result</th>
+                        <th>Confidence</th>
+                        <th>Response Time</th>
+                        <th>Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in data.individual_results %}
+                    <tr class="test-result-row" data-toggle="modal" data-target="#testModal{{ loop.index }}" style="cursor: pointer;">
+                        <td><strong>{{ result['test_info']['name'] }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ result['model_info']['model_name'] }}</span></td>
+                        <td><span class="badge bg-info">{{ result['test_info']['category'] }}</span></td>
+                        <td>
+                            {% if result['result']['is_jailbroken'] %}
+                                <span class="badge bg-danger">JAILBROKEN</span>
+                            {% else %}
+                                <span class="badge bg-success">SECURE</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 20px; width: 60px;">
+                                {% set confidence_pct = (result['result']['confidence_score'] * 100) | round | int %}
+                                <div class="progress-bar {{ 'bg-success' if confidence_pct >= 80 else 'bg-warning' if confidence_pct >= 50 else 'bg-danger' }}" 
+                                     style="width: {{ confidence_pct }}%">
+                                    {{ confidence_pct }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ "%.2f" | format(result['execution']['response_time']) }}s</td>
+                        <td>
+                            {% if result['analysis']['evaluation_method'] %}
+                                <span class="badge bg-outline-secondary">{{ result['analysis']['evaluation_method'] }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-lightbulb"></i> Timeline Notes</h6>
+            <ul class="mb-0">
+                <li><strong>Confidence Scores:</strong> Green (≥80%), Yellow (50-79%), Red (<50%)</li>
+                <li><strong>Evaluation Methods:</strong> Smart AI evaluation vs keyword-based fallback</li>
+                <li><strong>Response Times:</strong> Time taken by the model to generate responses</li>
+                <li>Click on the Tests tab for detailed conversation views and evaluator reasoning</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-warning" role="alert">
+    <h4 class="alert-heading">No History Available</h4>
+    <p>No benchmark history found. Run a benchmark test to generate historical data.</p>
+    <hr>
+    <p class="mb-0">Use <code>python bench.py --summary</code> to create your first test run.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.test-result-row').forEach(row => {
+    row.addEventListener('click', function() {
+        
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.test-result-row');
+    rows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+});
+</script>
+{% endblock %}

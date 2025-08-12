@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-tachometer-alt text-primary"></i>
+            Benchmark Dashboard
+        </h1>
+        <p class="text-muted">Latest benchmark run: {{ data.run_id }}</p>
+    </div>
+</div>
+
+{% if data.analytics %}
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100 border-primary">
+            <div class="card-body text-center">
+                <div class="display-6 text-primary">{{ data.analytics.overall_statistics.total_tests }}</div>
+                <h6 class="card-title">Total Tests</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100 border-danger">
+            <div class="card-body text-center">
+                <div class="display-6 text-danger">{{ "%.1f" | format(data.analytics.overall_statistics.jailbreak_rate * 100) }}%</div>
+                <h6 class="card-title">Jailbreak Rate</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100 border-info">
+            <div class="card-body text-center">
+                <div class="display-6 text-info">{{ data.analytics.overall_statistics.unique_models_tested }}</div>
+                <h6 class="card-title">Models Tested</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card metric-card h-100 border-success">
+            <div class="card-body text-center">
+                <div class="display-6 text-success">{{ "%.1f" | format(data.analytics.overall_statistics.average_response_time_seconds) }}s</div>
+                <h6 class="card-title">Avg Response Time</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if data.adversarial_results %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h6><i class="fas fa-shield"></i> Adversarial Testing Results</h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Total Adversarial Tests:</strong> {{ data.adversarial_results|length }}
+                </div>
+                <div class="col-md-3">
+                    {% set successful_attacks = data.adversarial_results | selectattr('adversarial_test.success', 'equalto', true) | list | length %}
+                    <strong>Successful Attacks:</strong> <span class="text-danger">{{ successful_attacks }}</span>
+                </div>
+                <div class="col-md-3">
+                    <strong>Defended:</strong> <span class="text-success">{{ data.adversarial_results|length - successful_attacks }}</span>
+                </div>
+                <div class="col-md-3">
+                    {% set attack_success_rate = (successful_attacks / data.adversarial_results|length * 100) if data.adversarial_results|length > 0 else 0 %}
+                    <strong>Attack Success Rate:</strong> <span class="{{ 'text-danger' if attack_success_rate > 50 else 'text-success' }}">{{ "%.1f" | format(attack_success_rate) }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Jailbreak Rates by Model</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="modelChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Attack Categories</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Model Performance Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Model</th>
+                                <th>Jailbreak Rate</th>
+                                <th>Response Time</th>
+                                <th>Tests</th>
+                                <th>Category</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model, stats in data.analytics.model_performance.items() %}
+                            <tr>
+                                <td><strong>{{ model }}</strong></td>
+                                <td>
+                                    <span class="badge bg-danger">{{ "%.1f" | format(stats.jailbreak_rate * 100) }}%</span>
+                                </td>
+                                <td>{{ "%.2f" | format(stats.avg_response_time) }}s</td>
+                                <td>{{ stats.total_tests }}</td>
+                                <td>
+                                    {% set rate = stats.jailbreak_rate %}
+                                    {% if rate >= 0.7 %}
+                                        <span class="badge bg-danger">Vulnerable</span>
+                                    {% elif rate >= 0.4 %}
+                                        <span class="badge bg-warning">Moderate</span>
+                                    {% elif rate >= 0.2 %}
+                                        <span class="badge bg-info">Resistant</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Secure</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if data.analytics %}
+<script>
+const modelCtx = document.getElementById('modelChart').getContext('2d');
+const modelData = {
+    labels: [
+        {% for model, stats in data.analytics.model_performance.items() %}
+        '{{ model }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'Jailbreak Rate (%)',
+        data: [
+            {% for model, stats in data.analytics.model_performance.items() %}
+            {{ stats.jailbreak_rate * 100 }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+        borderColor: 'rgba(220, 53, 69, 1)',
+        borderWidth: 1
+    }]
+};
+
+new Chart(modelCtx, {
+    type: 'bar',
+    data: modelData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+const categoryData = {
+    labels: [
+        {% for category, stats in data.analytics.test_category_analysis.items() %}
+        '{{ category }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for category, stats in data.analytics.test_category_analysis.items() %}
+            {{ stats.jailbreak_rate * 100 }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+        ]
+    }]
+};
+
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: categoryData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

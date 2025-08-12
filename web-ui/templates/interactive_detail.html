@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Chat {{ session.session_id }} - Jailbreak Benchmark{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-6">
+            <i class="fas fa-comment text-primary"></i>
+            Interactive Chat Session
+            <span class="badge bg-secondary">{{ session.session_id }}</span>
+        </h1>
+        <p class="text-muted">Detailed messages and statistics</p>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3 mb-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="h5"><span class="badge bg-info">{{ session.provider }}/{{ session.model_name }}</span></div>
+                <small class="text-muted">Model</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-dark">
+            <div class="card-body text-center">
+                <div class="h5">{{ session.message_counts.user + session.message_counts.assistant + session.message_counts.system }}</div>
+                <small class="text-muted">Total Messages</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="h5 text-primary">{{ session.created_at }}</div>
+                <small class="text-muted">Created</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="h5 text-success">{{ session.updated_at }}</div>
+                <small class="text-muted">Updated</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if session.system_prompt %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light"><strong>System Prompt</strong></div>
+            <div class="card-body"><pre class="mb-0"><code>{{ session.system_prompt }}</code></pre></div>
+        </div>
+    </div>
+    </div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <strong>Messages</strong>
+                <a href="/interactive" class="btn btn-sm btn-outline-secondary">Back to list</a>
+            </div>
+            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                {% for m in session.messages %}
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="badge {{ 'bg-primary' if m.message_type == 'user' else 'bg-secondary' if m.message_type == 'assistant' else 'bg-warning text-dark' }}">
+                            {{ m.metadata.role if m.metadata and m.metadata.role else m.message_type|title }}
+                        </span>
+                        <small class="text-muted ms-2">{{ m.timestamp }}</small>
+                    </div>
+                    <div class="bg-light p-2 rounded">
+                        <small style="white-space: pre-wrap;">{{ m.content }}</small>
+                    </div>
+                    {% if m.metadata and m.metadata.analysis %}
+                    <div class="mt-1">
+                        <small class="text-muted">Tokens: {{ m.metadata.analysis.usage.total_tokens if m.metadata.analysis.usage }}</small>
+                        {% if m.metadata.analysis.flag_matches %}
+                        <div class="mt-1">
+                            <span class="badge bg-danger">Suspicious</span>
+                            <small class="text-muted">Matches:
+                                {% for fw in m.metadata.analysis.flag_matches %}
+                                    <span class="badge bg-outline-danger text-danger border ms-1">{{ fw }}</span>
+                                {% endfor %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card mb-3">
+            <div class="card-header bg-light"><strong>Message Counts</strong></div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="h5 text-primary">{{ session.message_counts.user }}</div>
+                        <small class="text-muted">User</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 text-secondary">{{ session.message_counts.assistant }}</div>
+                        <small class="text-muted">Assistant</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 text-warning">{{ session.message_counts.system }}</div>
+                        <small class="text-muted">System</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if session.analytics or session.stats %}
+        <div class="card">
+            <div class="card-header bg-light"><strong>Session Analytics</strong></div>
+            <div class="card-body">
+                {% if session.analytics and session.analytics.total_exchanges is not none %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Exchanges</span>
+                    <span class="badge bg-dark">{{ session.analytics.total_exchanges }}</span>
+                </div>
+                {% endif %}
+
+                {% if session.stats and session.stats.latency.avg_response_time is not none %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Avg Response Time (analysis)</span>
+                    <span class="badge bg-secondary">{{ '%.2f'|format(session.stats.latency.avg_response_time) }}s</span>
+                </div>
+                {% endif %}
+                {% if session.stats and session.stats.latency.min_response_time is not none %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Min Response Time</span>
+                    <span class="badge bg-success">{{ '%.2f'|format(session.stats.latency.min_response_time) }}s</span>
+                </div>
+                {% endif %}
+                {% if session.stats and session.stats.latency.max_response_time is not none %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Max Response Time</span>
+                    <span class="badge bg-danger">{{ '%.2f'|format(session.stats.latency.max_response_time) }}s</span>
+                </div>
+                {% endif %}
+
+                {% if session.stats and session.stats.tokens %}
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Tokens</span>
+                    <span class="badge bg-dark">{{ session.stats.tokens.total_tokens }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Prompt Tokens</span>
+                    <span class="badge bg-info">{{ session.stats.tokens.prompt_tokens }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Completion Tokens</span>
+                    <span class="badge bg-secondary">{{ session.stats.tokens.completion_tokens }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Avg Tokens/Assistant Msg</span>
+                    <span class="badge bg-light text-dark">{{ '%.1f'|format(session.stats.tokens.avg_tokens_per_assistant_msg) }}</span>
+                </div>
+                {% endif %}
+
+                {% if session.stats and session.stats.context_window %}
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Max Context Tokens</span>
+                    <span class="badge bg-secondary">{{ session.stats.context_window.max_tokens if session.stats.context_window.max_tokens is not none else '-' }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Max Context Usage</span>
+                    <span class="badge bg-warning text-dark">{{ session.stats.context_window.max_usage_percentage if session.stats.context_window.max_usage_percentage is not none else '-' }}%</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Approached Limit</span>
+                    <span class="badge {{ 'bg-danger' if session.stats.context_window.approached_limit else 'bg-success' }}">{{ 'Yes' if session.stats.context_window.approached_limit else 'No' }}</span>
+                </div>
+                {% if session.stats.context_window.last_error %}
+                <div class="alert alert-warning mt-2"><small>{{ session.stats.context_window.last_error }}</small></div>
+                {% endif %}
+                {% endif %}
+
+                {% if session.stats and session.stats.flags %}
+                <hr>
+                <div class="mb-2"><strong>Flags</strong></div>
+                {% for ftype, fcount in session.stats.flags.items() %}
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">{{ ftype|title }}</span>
+                    <span class="badge bg-dark">{{ fcount }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if session.stats and session.stats.response_types %}
+                <hr>
+                <div class="mb-2"><strong>Response Types</strong></div>
+                {% for rtype, rcount in session.stats.response_types.items() %}
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">{{ rtype|title }}</span>
+                    <span class="badge bg-secondary">{{ rcount }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if session.stats and session.stats.patterns %}
+                <hr>
+                <div class="mb-2"><strong>Top Patterns</strong></div>
+                <div class="mb-2">
+                    <small class="text-muted">Rejection:</small>
+                    {% if session.stats.patterns.rejection %}
+                    {% for patt, cnt in session.stats.patterns.rejection.items() %}
+                    <div class="d-flex justify-content-between"><span>"{{ patt }}"</span><span class="badge bg-warning text-dark">{{ cnt }}</span></div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <small class="text-muted">Compliance:</small>
+                    {% if session.stats.patterns.compliance %}
+                    {% for patt, cnt in session.stats.patterns.compliance.items() %}
+                    <div class="d-flex justify-content-between"><span>"{{ patt }}"</span><span class="badge bg-info">{{ cnt }}</span></div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Flag Words:</small>
+                    {% if session.stats.patterns.flags %}
+                    {% for patt, cnt in session.stats.patterns.flags.items() %}
+                    <div class="d-flex justify-content-between"><span>"{{ patt }}"</span><span class="badge bg-danger">{{ cnt }}</span></div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+
